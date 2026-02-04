@@ -19,6 +19,13 @@ app.get("/health", (req, res) => {
 });
 
 // ===============================
+// ROOT (required by Shopify iframe)
+// ===============================
+app.get("/", (req, res) => {
+  res.send("Pedido Status API funcionando");
+});
+
+// ===============================
 // ORDER STATUS ENDPOINT
 // (esto es lo que llama el App Proxy)
 // ===============================
@@ -36,6 +43,13 @@ app.get("/order-status", async (req, res) => {
   if (!orderNumber.startsWith("#")) orderNumber = `#${orderNumber}`;
 
   try {
+    if (!SHOP || !TOKEN) {
+      return res.status(500).json({
+        error:
+          "Faltan variables de entorno. Revisa SHOPIFY_SHOP y SHOPIFY_ADMIN_TOKEN en Render.",
+      });
+    }
+
     // IMPORTANTE: encodeURIComponent para que # no rompa la URL
     const url = `https://${SHOP}/admin/api/${API_VERSION}/orders.json?name=${encodeURIComponent(
       orderNumber
@@ -78,7 +92,7 @@ app.get("/order-status", async (req, res) => {
       fulfillment_status: order.fulfillment_status,
       created_at: order.created_at,
 
-      // Esto es opcional para tu UI, pero ayuda:
+      // Campos opcionales para tu UI:
       stageIndex: order.fulfillment_status ? 3 : 1,
       finalLabel: order.fulfillment_status ? "Listo" : "Retiro en tienda / En camino",
       methodLabel: order.fulfillment_status ? "Despachado / Listo" : "En preparación",
